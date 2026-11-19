@@ -1,0 +1,13 @@
+{
+  "name": "mayoi-typescript",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "node": ">=22.22.2" },
+  "dependencies": {
+    "typescript": "6.0.3",
+    "typescript-language-server": "6.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18"
+  }
+}

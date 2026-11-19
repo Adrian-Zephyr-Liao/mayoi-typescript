@@ -1,0 +1,12 @@
+{
+  "name": "navigation-probe",
+  "version": "0.1.0",
+  "main": "main.js",
+  "contributes": {
+    "commands": [
+      { "id": "navigation-probe.open", "title": "Open navigation test file" },
+      { "id": "navigation-probe.select", "title": "Select navigation test symbol" },
+      { "id": "navigation-probe.record", "title": "Record navigation result" }
+    ]
+  }
+}
