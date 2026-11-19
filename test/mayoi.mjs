@@ -6,7 +6,8 @@ import { delimiter, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const binary = process.argv[2] ?? "/Applications/Mayoi.app/Contents/MacOS/Mayoi";
+const args = process.argv.slice(2);
+const binary = args.find(arg => arg !== "--navigation") ?? "/Applications/Mayoi.app/Contents/MacOS/Mayoi";
 const cases = [
   { name: "TS re-export", file: "index.ts", line: 0, text: "default", target: "user.ts", targetLine: 4 },
   { name: "TSX aliased module path", file: "screen.tsx", line: 1, text: "@/index", target: "index.ts", targetLine: 0 },
@@ -18,6 +19,14 @@ const cases = [
   { name: "JS JSDoc type", file: "legacy.js", line: 2, text: "User}", target: "user.ts", targetLine: 0 },
   { name: "JSX component", file: "legacy.jsx", line: 3, text: "UserCard", target: "card.tsx", targetLine: 5 },
 ];
+if (args.includes("--navigation")) {
+  cases.push(
+    { name: "Type definition", command: "go.typeDefinition", file: "navigation.ts", line: 14, text: "inferred.name", target: "user.ts", targetLine: 0 },
+    { name: "Definition in declaration file", file: "navigation.ts", line: 14, text: "greet(", target: "greeter.d.ts", targetLine: 0 },
+    { name: "Source definition in JavaScript", command: "go.sourceDefinition", file: "navigation.ts", line: 14, text: "greet(", target: "greeter.js", targetLine: 1 },
+    { name: "Interface implementation", command: "go.implementation", file: "navigation.ts", line: 3, text: "UserSource", target: "navigation.ts", targetLine: 7 },
+  );
+}
 
 const temp = realpathSync(mkdtempSync(join(tmpdir(), "mayoi-ts-")));
 const profile = join(temp, "profile");
@@ -51,7 +60,7 @@ try {
     writeFileSync(join(project, "case.json"), JSON.stringify(test));
     run([project], {
       MAYOI_SNAPSHOT: join(temp, `case-${index + 1}.png`),
-      MAYOI_SNAPSHOT_RUN: "navigation-probe.open navigation-probe.select go.definition navigation-probe.record navigation-probe.record",
+      MAYOI_SNAPSHOT_RUN: `navigation-probe.open navigation-probe.select ${test.command ?? "go.definition"} navigation-probe.record navigation-probe.record`,
     });
     const actual = JSON.parse(readFileSync(output, "utf8"));
     assert.equal(relative(project, realpathSync(actual.path)), join("src", test.target), test.name);
