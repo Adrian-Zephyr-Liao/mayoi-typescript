@@ -4,9 +4,15 @@
 
 ## 安装
 
-在支持 `localResolve` 的 Mayoi 中，打开插件设置，输入 `Adrian-Zephyr-Liao/mayoi-typescript` 并点击安装。首次下载后，插件自带语言服务器和兜底 TypeScript，本地启动无需联网。Mayoi 需要能在 PATH 中找到 Node.js 22.22.2 或更新版本。
+在 Mayoi 的插件设置里粘贴下面的地址并点击安装。
 
-不支持 `localResolve` 的旧版 Mayoi 以及 SSH 等远程工作区仍需在工作区所在机器的 PATH 中提供 `typescript-language-server`。
+```text
+Adrian-Zephyr-Liao/mayoi-typescript
+```
+
+本地工作区的一键安装需要支持 `localResolve` 的 Mayoi 构建，以及 `PATH` 中的 Node.js 22.22.2 或更新版本。插件已自带语言服务器和兜底 TypeScript，安装后可离线启动。 [Mayoi 宿主支持与桌面联调结果](https://github.com/sorrycc/Mayoi/pull/211)
+
+旧版 Mayoi 和 SSH 等远程工作区需要在工作区所在机器的 `PATH` 中提供 `typescript-language-server`。
 
 在 Mayoi 中打开项目，把光标放在导入路径、调用、类型名、JSX 组件名或属性名上，按 **F12**。支持语义导航的 Mayoi 构建还可以从 **Go** 菜单运行以下操作。
 
@@ -25,7 +31,7 @@
 
 ## 开发与验证
 
-`src/resolve.ts` 根据工作区返回 Mayoi 的语言服务启动参数。Vite+ 的 `vp pack` 生成 `runtime/resolve.mjs`，`scripts/prepare-runtime.ts` 按锁文件复制第三方运行时及许可到 `runtime/vendor`。这两个生成路径随 Git 分发，升级依赖后用以下命令重新生成。
+`src/resolve.ts` 根据工作区返回 Mayoi 的语言服务启动参数。Vite+ 的 `vp pack` 生成 `runtime/resolve.mjs`，`scripts/prepare-runtime.ts` 按锁文件复制第三方运行时及许可到 `runtime/vendor`。这两项生成产物随 Git 分发，下面的命令用于开发和升级依赖。 [启动器源码](src/resolve.ts) · [运行时打包脚本](scripts/prepare-runtime.ts)
 
 ```sh
 npm ci
