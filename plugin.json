@@ -1,7 +1,7 @@
 {
   "name": "mayoi-typescript",
   "displayName": "TypeScript and JavaScript",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Code navigation for JavaScript, TypeScript, JSX and TSX.",
   "contributes": {
     "languages": [
@@ -14,6 +14,7 @@
         "languages": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
         "command": "typescript-language-server",
         "args": ["--stdio"],
+        "localResolve": { "command": "node", "script": "runtime/resolve.mjs" },
         "sourceDefinitionCommand": "_typescript.goToSourceDefinition",
         "initializationOptions": {
           "disableAutomaticTypingAcquisition": true,

@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
+import { delimiter, dirname, join, relative } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const args = process.argv.slice(2);
-const binary = args.find(arg => arg !== "--navigation") ?? "/Applications/Mayoi.app/Contents/MacOS/Mayoi";
+const installed = args.includes("--installed");
+const binary = args.find(arg => !arg.startsWith("--")) ?? "/Applications/Mayoi.app/Contents/MacOS/Mayoi";
 const cases = [
   { name: "TS re-export", file: "index.ts", line: 0, text: "default", target: "user.ts", targetLine: 4 },
   { name: "TSX aliased module path", file: "screen.tsx", line: 1, text: "@/index", target: "index.ts", targetLine: 0 },
@@ -34,7 +35,9 @@ const project = join(temp, "project");
 const env = {
   ...process.env,
   MAYOI_DATA_DIR: profile,
-  PATH: [join(root, "node_modules", ".bin"), process.env.PATH].join(delimiter),
+  PATH: (installed
+    ? [dirname(process.execPath), "/usr/bin", "/bin"]
+    : [join(root, "node_modules", ".bin"), process.env.PATH]).join(delimiter),
 };
 delete env.MAYOI_CLI;
 delete env.MAYOI_SNAPSHOT;
@@ -49,18 +52,39 @@ function run(args, extraEnv = {}) {
 let passed = false;
 try {
   cpSync(join(root, "test", "project"), project, { recursive: true });
-  symlinkSync(join(root, "node_modules"), join(project, "node_modules"), "dir");
-  for (const path of [root, join(root, "test", "probe")]) {
-    run(["plugin", "dev", path], { MAYOI_CLI: "1" });
+  const dependencies = join(project, "node_modules");
+  if (installed) {
+    mkdirSync(dependencies);
+    symlinkSync(join(root, "node_modules", "@types"), join(dependencies, "@types"), "dir");
+    if (process.env.MAYOI_TEST_TYPESCRIPT) {
+      symlinkSync(realpathSync(process.env.MAYOI_TEST_TYPESCRIPT), join(dependencies, "typescript"), "dir");
+    }
+    run(["plugin", "install", pathToFileURL(root).href], { MAYOI_CLI: "1" });
+    const plugin = join(profile, "plugins", "mayoi-typescript");
+    assert.ok(existsSync(join(plugin, "runtime", "resolve.mjs")));
+    assert.ok(!existsSync(join(plugin, "node_modules")));
+  } else {
+    symlinkSync(join(root, "node_modules"), dependencies, "dir");
+    run(["plugin", "dev", root], { MAYOI_CLI: "1" });
   }
+  run(["plugin", "dev", join(root, "test", "probe")], { MAYOI_CLI: "1" });
 
   const output = join(project, "result.json");
   for (const [index, test] of cases.entries()) {
     rmSync(output, { force: true });
+    // Each case starts without the previous app's tabs or caret to restore.
+    rmSync(join(profile, "state.json"), { force: true });
     writeFileSync(join(project, "case.json"), JSON.stringify(test));
+    const commands = [
+      "navigation-probe.open",
+      "navigation-probe.select",
+      test.command ?? "go.definition",
+      // Snapshot commands run 600 ms apart. Record through the LSP deadline.
+      ...Array(9).fill("navigation-probe.record"),
+    ];
     run([project], {
       MAYOI_SNAPSHOT: join(temp, `case-${index + 1}.png`),
-      MAYOI_SNAPSHOT_RUN: `navigation-probe.open navigation-probe.select ${test.command ?? "go.definition"} navigation-probe.record navigation-probe.record`,
+      MAYOI_SNAPSHOT_RUN: commands.join(" "),
     });
     const actual = JSON.parse(readFileSync(output, "utf8"));
     assert.equal(relative(project, realpathSync(actual.path)), join("src", test.target), test.name);

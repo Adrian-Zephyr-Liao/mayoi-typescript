@@ -1,0 +1,2 @@
+runtime/resolve.mjs linguist-generated=true
+runtime/vendor/** linguist-vendored -text
