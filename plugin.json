@@ -14,7 +14,11 @@
         "languages": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
         "command": "typescript-language-server",
         "args": ["--stdio"],
-        "initializationOptions": { "disableAutomaticTypingAcquisition": true }
+        "sourceDefinitionCommand": "_typescript.goToSourceDefinition",
+        "initializationOptions": {
+          "disableAutomaticTypingAcquisition": true,
+          "tsserver": { "useSyntaxServer": "never" }
+        }
       }
     ]
   }
